@@ -18,8 +18,6 @@ const registerUser = asyncHandler( async (req, res) => {
 
 
     const {username, email, fullName, password} = req.body
-    console.log("username : ", username);
-    console.log("email : ", email)
 
     if(
         [username, email, fullName, password].some( (field) => 
@@ -28,7 +26,7 @@ const registerUser = asyncHandler( async (req, res) => {
         throw new ApiError(400, "all fields are required")
     }
 
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or : [{ username }, { email }]
     })
 
@@ -36,8 +34,27 @@ const registerUser = asyncHandler( async (req, res) => {
         throw new ApiError(409, "user with email or username already exist")
     }
 
-    const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    // const avatarLocalPath = req.files?.avatar[0]?.path;
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    const avatarLocalPath =
+    req.files &&
+    req.files.avatar &&
+    req.files.avatar[0] &&
+    req.files.avatar[0].path;
+
+    // const coverImageLocalPath =
+    // req.files &&
+    // req.files.coverImage &&
+    // req.files.coverImage[0] &&
+    // req.files.coverImage[0].path; 
+
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage)
+      && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
+
 
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required")
@@ -53,7 +70,7 @@ const registerUser = asyncHandler( async (req, res) => {
     const user = await User.create({
         fullName,
         avatar : avatar.url,
-        coverImage : coverImage?.url || "",
+        coverImage: coverImage ? coverImage.url : "",
         email,
         password,
         username : username.toLowerCase()
